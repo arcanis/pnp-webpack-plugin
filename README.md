@@ -1,7 +1,7 @@
 # <img src="https://raw.githubusercontent.com/webpack/media/master/logo/icon-square-small.png" height="40" align="right" /> [Plug'n'Play](https://github.com/yarnpkg/rfcs/pull/101) resolver for Webpack
 
 [![npm version](https://img.shields.io/npm/v/pnp-webpack-plugin.svg)](https://www.npmjs.com/package/pnp-webpack-plugin)
-[![node version](https://img.shields.io/node/v/ts-loader.svg)](https://www.npmjs.com/package/ts-loader)
+[![node version](https://img.shields.io/node/v/pnp-webpack-plugin.svg)](https://www.npmjs.com/package/pnp-webpack-plugin)
 
 ## Installation
 
