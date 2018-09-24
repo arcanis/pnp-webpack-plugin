@@ -3,6 +3,12 @@
 [![npm version](https://img.shields.io/npm/v/pnp-webpack-plugin.svg)](https://www.npmjs.com/package/pnp-webpack-plugin)
 [![node version](https://img.shields.io/node/v/ts-loader.svg)](https://www.npmjs.com/package/ts-loader)
 
+## Installation
+
+```
+yarn add -D pnp-webpack-plugin
+```
+
 ## Usage
 
 Simply add the plugin to both the `resolver` and `resolveLoader`:
