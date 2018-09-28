@@ -36,7 +36,7 @@ function getSourceLocation(sourceLocator) {
   if (!sourceInformation.packageLocation)
     throw new Error(`The package to use as resolution source seem to not have been installed - maybe it's a devDependency not installed in prod?`);
 
-  return sourceInformation.packageLocation;
+  return sourceInformation.packageLocation.replace(/\/?$/, `/`);
 }
 
 function makeResolver(sourceLocator) {
