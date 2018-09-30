@@ -23,20 +23,16 @@ module.exports = {
     plugins: [
       PnpWebpackPlugin,
     ],
-    symlinks: false,
   },
   resolveLoader: {
     plugins: [
       PnpWebpackPlugin.moduleLoader(module),
     ],
-    symlinks: false,
   },
 };
 ```
 
 The `resolve` entry will take care of correctly resolving the dependencies required by your program, and the `resolveLoader` entry will help Webpack find the location of the loaders on the disk. Note that in this case, all loaders will be resolved relative to the package containing your configuration.
-
-The `symlinks` part, while not required strictly speaking, avoids problems with the way Webpack automatically resolves symlinks to their absolute paths (to mimic what Node does in its default resolution rules). PnP typically doesn't use symlinks, except for some packages of the dependency tree that have peer dependencies.
 
 In case part of your configuration comes from third-party packages that use their own loaders, make sure they use `require.resolve` - this will ensure that the resolution process is portable accross environments (including when Plug'n'Play isn't enabled), and prevent it from relying on undefined behaviors:
 

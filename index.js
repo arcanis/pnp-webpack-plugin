@@ -46,6 +46,17 @@ function makeResolver(sourceLocator) {
     const MAYBE_BUILTIN = /^[^\/]$/;
 
     const resolvedHook = resolver.ensureHook(`resolve`);
+
+    // Prevents the SymlinkPlugin from kicking in. We need the symlinks to be preserved because that's how we deal with peer dependencies ambiguities.
+    resolver.getHook(`file`).intercept({
+      register: tapInfo => {
+        return tapInfo.name !== `SymlinkPlugin` ? tapInfo : Object.assign({}, tapInfo, {fn: (request, resolveContext, callback) => {
+          callback();
+        }});
+      }
+    });
+
+    // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
     resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
       let request = requestContext.request;
       let issuer = sourceLocation || requestContext.context.issuer;
@@ -73,7 +84,7 @@ function makeResolver(sourceLocator) {
         }),
         null,
         resolveContext,
-        callback,
+        callback
       );
     });
   };
