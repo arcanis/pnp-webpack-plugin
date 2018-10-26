@@ -1,6 +1,6 @@
 {
     "name": "pnp-webpack-plugin",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "plug'n'play resolver for Webpack",
     "license": "MIT",
     "engines": {
@@ -19,5 +19,8 @@
         "yarn",
         "plugnplay",
         "pnp"
-    ]
+    ],
+    "dependencies": {
+        "ts-pnp": "^1.0.0"
+    }
 }

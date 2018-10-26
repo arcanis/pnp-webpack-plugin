@@ -107,3 +107,7 @@ module.exports.topLevelLoader = pnp ? {
 } : {
   apply: nothing,
 };
+
+module.exports.tsLoaderOptions = (options = {}) => pnp ? Object.assign({}, options, {
+  resolveModuleName: require('ts-pnp').resolveModuleName,
+}) : options;
