@@ -74,7 +74,8 @@ function makeResolver(sourceLocator) {
       try {
         resolution = pnp.resolveToUnqualified(request, issuer, {considerBuiltins: false});
       } catch (error) {
-        return callback(error);
+        // Defer to another resolver.
+        return callback();
       }
 
       resolver.doResolve(
