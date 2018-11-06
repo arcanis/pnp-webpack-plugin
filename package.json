@@ -22,5 +22,15 @@
     ],
     "dependencies": {
         "ts-pnp": "^1.0.0"
+    },
+    "devDependencies": {
+        "enhanced-resolve": "^4.1.0",
+        "jest": "^23.6.0",
+        "jest-environment-node": "^23.4.0",
+        "jest-pnp-resolver": "^1.0.1",
+        "source-map": "^0.7.3"
+    },
+    "installConfig": {
+        "pnp": true
     }
 }
