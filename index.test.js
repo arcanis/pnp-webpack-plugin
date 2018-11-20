@@ -1,3 +1,4 @@
+const path = require(`path`);
 let PnpWebpackPlugin = require(`./index`);
 
 function makeResolver(resolverPlugins, options = {}) {
@@ -36,27 +37,27 @@ describe(`Regular Plugin`, () => {
     const resolver = makeResolver([PnpWebpackPlugin]);
     const resolution = await makeRequest(resolver, `./index.js`, __dirname);
 
-    expect(resolution).toEqual(`${__dirname}/index.js`);
+    expect(resolution).toEqual(path.normalize(`${__dirname}/index.js`));
   });
 
   it(`shouldn't prevent the 'extensions' option from working`, async () => {
     const resolver = makeResolver([PnpWebpackPlugin]);
     const resolution = await makeRequest(resolver, `./index`, __dirname);
 
-    expect(resolution).toEqual(`${__dirname}/index.js`);
+    expect(resolution).toEqual(path.normalize(`${__dirname}/index.js`));
   });
 
   it(`shouldn't prevent the 'alias' option from working`, async () => {
     const resolver = makeResolver([PnpWebpackPlugin], {alias: {[`foo`]: `./fixtures/index.js`}});
     const resolution = await makeRequest(resolver, `foo`, __dirname);
 
-    expect(resolution).toEqual(`${__dirname}/fixtures/index.js`);
+    expect(resolution).toEqual(path.normalize(`${__dirname}/fixtures/index.js`));
   });
 
   it(`shouldn't prevent the 'modules' option from working`, async () => {
     const resolver = makeResolver([PnpWebpackPlugin], {modules: [`./fixtures`]});
     const resolution = await makeRequest(resolver, `file`, __dirname);
 
-    expect(resolution).toEqual(`${__dirname}/fixtures/file.js`);
+    expect(resolution).toEqual(path.normalize(`${__dirname}/fixtures/file.js`));
   });
 });

@@ -1,3 +1,5 @@
+const path = require(`path`);
+
 let pnp;
 
 try {
@@ -65,7 +67,7 @@ function makeResolver(sourceLocator) {
       if (!issuer) {
         issuer = `${requestContext.path}/`;
       // We only support issuer when they're absolute paths. I'm not sure the opposite can ever happen, but better check here.
-      } else if (!issuer.startsWith(`/`)) {
+      } else if (!path.isAbsolute(issuer)) {
         throw new Error(`Cannot successfully resolve this dependency - issuer not supported (${issuer})`);
       }
 
