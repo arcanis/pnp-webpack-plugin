@@ -78,7 +78,6 @@ function makeResolver(sourceLocator, filter) {
         throw new Error(`Cannot successfully resolve this dependency - issuer not supported (${issuer})`);
       }
 
-console.log([request, issuer, filter]);
       if (filter) {
         const relative = path.relative(filter, issuer);
         if (path.isAbsolute(relative) || BACKWARD_PATH.test(relative)) {
