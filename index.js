@@ -26,6 +26,13 @@ function getModuleLocator(module) {
   return moduleLocator;
 }
 
+function getDependencyLocator(sourceLocator, name) {
+  const {packageDependencies} = pnp.getPackageInformation(sourceLocator);
+  const reference = packageDependencies.get(name);
+
+  return {name, reference};
+}
+
 function getSourceLocation(sourceLocator) {
   if (!sourceLocator)
     return null;
@@ -41,11 +48,11 @@ function getSourceLocation(sourceLocator) {
   return sourceInformation.packageLocation.replace(/\/?$/, `/`);
 }
 
-function makeResolver(sourceLocator) {
+function makeResolver(sourceLocator, filter) {
   const sourceLocation = getSourceLocation(sourceLocator);
 
   return resolver => {
-    const MAYBE_BUILTIN = /^[^\/]$/;
+    const BACKWARD_PATH = /^\.\.([\\\/]|$)/;
 
     const resolvedHook = resolver.ensureHook(`resolve`);
 
@@ -61,7 +68,7 @@ function makeResolver(sourceLocator) {
     // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
     resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
       let request = requestContext.request;
-      let issuer = sourceLocation || requestContext.context.issuer;
+      let issuer = requestContext.context.issuer;
 
       // When using require.context, issuer seems to be false (cf https://github.com/webpack/webpack-dev-server/blob/d0725c98fb752d8c0b1e8c9067e526e22b5f5134/client-src/default/index.js#L94)
       if (!issuer) {
@@ -71,10 +78,19 @@ function makeResolver(sourceLocator) {
         throw new Error(`Cannot successfully resolve this dependency - issuer not supported (${issuer})`);
       }
 
+console.log([request, issuer, filter]);
+      if (filter) {
+        const relative = path.relative(filter, issuer);
+        if (path.isAbsolute(relative) || BACKWARD_PATH.test(relative)) {
+          return callback(null);
+        }
+      }
+
+      let resolutionIssuer = sourceLocation || issuer;
       let resolution;
 
       try {
-        resolution = pnp.resolveToUnqualified(request, issuer, {considerBuiltins: false});
+        resolution = pnp.resolveToUnqualified(request, resolutionIssuer, {considerBuiltins: false});
       } catch (error) {
         return callback(error);
       }
@@ -106,6 +122,12 @@ module.exports.moduleLoader = module => pnp ? {
 
 module.exports.topLevelLoader = pnp ? {
   apply: makeResolver(pnp.topLevel),
+} : {
+  apply: nothing,
+};
+
+module.exports.bind = (filter, module, dependency) => pnp ? {
+  apply: makeResolver(getDependencyLocator(getModuleLocator(module), dependency), filter),
 } : {
   apply: nothing,
 };
