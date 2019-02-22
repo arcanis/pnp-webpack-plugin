@@ -52,7 +52,7 @@ function makeResolver(sourceLocator, filter) {
   const sourceLocation = getSourceLocation(sourceLocator);
 
   return resolver => {
-    const BACKWARD_PATH = /^\.\.(\/|$)/;
+    const BACKWARD_PATH = /^\.\.([\\\/]|$)/;
 
     const resolvedHook = resolver.ensureHook(`resolve`);
 
