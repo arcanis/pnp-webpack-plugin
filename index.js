@@ -113,6 +113,12 @@ module.exports = pnp ? {
   apply: nothing,
 };
 
+module.exports.makePlugin = (locator, filter) => pnp ? {
+  apply: makeResolver(locator, filter),
+} : {
+  apply: nothing,
+};
+
 module.exports.moduleLoader = module => pnp ? {
   apply: makeResolver(getModuleLocator(module)),
 } : {
@@ -126,7 +132,7 @@ module.exports.topLevelLoader = pnp ? {
 };
 
 module.exports.bind = (filter, module, dependency) => pnp ? {
-  apply: makeResolver(getDependencyLocator(getModuleLocator(module), dependency), filter),
+  apply: makeResolver(dependency ? getDependencyLocator(getModuleLocator(module), dependency) : getModuleLocator(module), filter),
 } : {
   apply: nothing,
 };
