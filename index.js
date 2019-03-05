@@ -13,7 +13,9 @@ function nothing() {
 }
 
 function getModuleLocator(module) {
-  const moduleLocation = module.filename;
+  const moduleLocation = typeof module === `string`
+    ? module
+    : module.filename;
 
   if (!moduleLocation)
     throw new Error(`The specified module doesn't seem to exist on the filesystem`);
