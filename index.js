@@ -141,4 +141,5 @@ module.exports.bind = (filter, module, dependency) => pnp ? {
 
 module.exports.tsLoaderOptions = (options = {}) => pnp ? Object.assign({}, options, {
   resolveModuleName: require('ts-pnp').resolveModuleName,
+  resolveTypeReferenceDirective: require('ts-pnp').resolveModuleName,
 }) : options;
