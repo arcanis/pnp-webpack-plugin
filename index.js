@@ -146,10 +146,6 @@ module.exports.tsLoaderOptions = (options = {}) => pnp ? Object.assign({}, optio
 }) : options;
 
 module.exports.forkTsCheckerOptions = (options = {}) => pnp ? Object.assign({}, options, {
-  resolveModuleName: (typescript, moduleName, containingFile, compilerOptions, resolutionHost) => {
-    return resolveModuleName(moduleName, containingFile, compilerOptions, resolutionHost, typescript.resolveModuleName);
-  },
-  resolveTypeReferenceDirective: (typescript, moduleName, containingFile, compilerOptions, resolutionHost) => {
-    return resolveModuleName(moduleName, containingFile, compilerOptions, resolutionHost, typescript.resolveTypeReferenceDirective);
-  },
+  resolveModuleNameModule: require.resolve(`./ts`),
+  resolveTypeReferenceDirectiveModule: require.resolve(`./ts`),
 }) : options;
