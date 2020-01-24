@@ -2,6 +2,7 @@ const path = require(`path`);
 const {resolveModuleName} = require(`ts-pnp`);
 
 let pnp;
+const pnpErrors = [];
 
 try {
   pnp = require(`pnpapi`);
@@ -94,7 +95,11 @@ function makeResolver(sourceLocator, filter) {
       try {
         resolution = pnp.resolveToUnqualified(request, resolutionIssuer, {considerBuiltins: false});
       } catch (error) {
-        return callback(error);
+        if (resolveContext.missingDependencies)
+          resolveContext.missingDependencies.add(requestContext.path);
+        if (resolveContext.log) resolveContext.log(error);
+        pnpErrors.push(error);
+        return callback();
       }
 
       resolver.doResolve(
@@ -108,6 +113,22 @@ function makeResolver(sourceLocator, filter) {
       );
     });
   };
+}
+
+function debugResolveErrorsPlugin(compiler) {
+  const doneFn = (result) => {
+    if (result.hasErrors()) {
+      pnpErrors.forEach(err => 
+        console.error(`------------------\nPnpResolver error:\n\n${err.message}\n------------------`)
+      );
+    }
+  }
+
+  if (compiler.hooks) {
+    compiler.hooks.done.tap('PnpResolver', doneFn);
+  } else {
+    compiler.plugin('done', doneFn);
+  }
 }
 
 module.exports = pnp ? {
@@ -136,6 +157,12 @@ module.exports.topLevelLoader = pnp ? {
 
 module.exports.bind = (filter, module, dependency) => pnp ? {
   apply: makeResolver(dependency ? getDependencyLocator(getModuleLocator(module), dependency) : getModuleLocator(module), filter),
+} : {
+  apply: nothing,
+};
+
+module.exports.debugResolveErrors = () => pnp ? {
+  apply: debugResolveErrorsPlugin,
 } : {
   apply: nothing,
 };
