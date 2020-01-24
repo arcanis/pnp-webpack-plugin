@@ -29,9 +29,6 @@ module.exports = {
       PnpWebpackPlugin.moduleLoader(module),
     ],
   },
-  plugins: [
-    PnpWebpackPlugin.debugResolveErrors() // optional, helps debug why dependencies are failing to resolve
-  ]
 };
 ```
 
