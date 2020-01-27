@@ -68,6 +68,11 @@ function makeResolver(sourceLocator, filter) {
       }
     });
 
+    resolver.getHook(`after-module`).tapAsync(`PnpResolver`, (request, resolveContext, callback) => {
+      // rethrow pnp errors if we have any for this request
+      return callback(resolveContext.pnpErrors && resolveContext.pnpErrors.get(request.context.issuer));
+    });
+
     // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
     resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
       let request = requestContext.request;
@@ -94,7 +99,16 @@ function makeResolver(sourceLocator, filter) {
       try {
         resolution = pnp.resolveToUnqualified(request, resolutionIssuer, {considerBuiltins: false});
       } catch (error) {
-        return callback(error);
+        if (resolveContext.missingDependencies)
+          resolveContext.missingDependencies.add(requestContext.path);
+
+        if (resolveContext.log)
+          resolveContext.log(error.message);
+
+        resolveContext.pnpErrors = resolveContext.pnpErrors || new Map();
+        resolveContext.pnpErrors.set(issuer, error);
+
+        return callback();
       }
 
       resolver.doResolve(
