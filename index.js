@@ -101,9 +101,13 @@ function makeResolver(sourceLocator, filter) {
       } catch (error) {
         if (resolveContext.missingDependencies)
           resolveContext.missingDependencies.add(requestContext.path);
-        if (resolveContext.log) resolveContext.log(error.message);
+
+        if (resolveContext.log)
+          resolveContext.log(error.message);
+
         resolveContext.pnpErrors = resolveContext.pnpErrors || new Map();
         resolveContext.pnpErrors.set(issuer, error);
+
         return callback();
       }
 
