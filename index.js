@@ -154,12 +154,12 @@ module.exports.bind = (filter, module, dependency) => process.versions.pnp ? {
   apply: nothing,
 };
 
-module.exports.tsLoaderOptions = (options = {}) => pnp ? Object.assign({}, options, {
+module.exports.tsLoaderOptions = (options = {}) => process.versions.pnp ? Object.assign({}, options, {
   resolveModuleName: resolveModuleName,
   resolveTypeReferenceDirective: resolveModuleName,
 }) : options;
 
-module.exports.forkTsCheckerOptions = (options = {}) => pnp ? Object.assign({}, options, {
+module.exports.forkTsCheckerOptions = (options = {}) => process.versions.pnp ? Object.assign({}, options, {
   resolveModuleNameModule: require.resolve(`./ts`),
   resolveTypeReferenceDirectiveModule: require.resolve(`./ts`),
 }) : options;
