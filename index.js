@@ -1,19 +1,13 @@
 const path = require(`path`);
 const {resolveModuleName} = require(`ts-pnp`);
 
-let pnp;
-
-try {
-  pnp = require(`pnpapi`);
-} catch (error) {
-  // not in PnP; not a problem
-}
-
 function nothing() {
   // ¯\_(ツ)_/¯
 }
 
 function getModuleLocator(module) {
+  const pnp = require(`pnpapi`);
+
   const moduleLocation = typeof module === `string`
     ? module
     : module.filename;
@@ -30,6 +24,8 @@ function getModuleLocator(module) {
 }
 
 function getDependencyLocator(sourceLocator, name) {
+  const pnp = require(`pnpapi`);
+
   const {packageDependencies} = pnp.getPackageInformation(sourceLocator);
   const reference = packageDependencies.get(name);
 
@@ -39,6 +35,8 @@ function getDependencyLocator(sourceLocator, name) {
 function getSourceLocation(sourceLocator) {
   if (!sourceLocator)
     return null;
+
+  const pnp = require(`pnpapi`);
 
   const sourceInformation = pnp.getPackageInformation(sourceLocator);
 
@@ -52,6 +50,8 @@ function getSourceLocation(sourceLocator) {
 }
 
 function makeResolver(sourceLocator, filter) {
+  const pnp = require(`pnpapi`);
+
   const sourceLocation = getSourceLocation(sourceLocator);
 
   return resolver => {
@@ -124,31 +124,31 @@ function makeResolver(sourceLocator, filter) {
   };
 }
 
-module.exports = pnp ? {
+module.exports = process.versions.pnp ? {
   apply: makeResolver(null),
 } : {
   apply: nothing,
 };
 
-module.exports.makePlugin = (locator, filter) => pnp ? {
+module.exports.makePlugin = (locator, filter) => process.versions.pnp ? {
   apply: makeResolver(locator, filter),
 } : {
   apply: nothing,
 };
 
-module.exports.moduleLoader = module => pnp ? {
+module.exports.moduleLoader = module => process.versions.pnp ? {
   apply: makeResolver(getModuleLocator(module)),
 } : {
   apply: nothing,
 };
 
-module.exports.topLevelLoader = pnp ? {
-  apply: makeResolver(pnp.topLevel),
+module.exports.topLevelLoader = process.versions.pnp ? {
+  apply: makeResolver({name: null, reference: null}),
 } : {
   apply: nothing,
 };
 
-module.exports.bind = (filter, module, dependency) => pnp ? {
+module.exports.bind = (filter, module, dependency) => process.versions.pnp ? {
   apply: makeResolver(dependency ? getDependencyLocator(getModuleLocator(module), dependency) : getModuleLocator(module), filter),
 } : {
   apply: nothing,
