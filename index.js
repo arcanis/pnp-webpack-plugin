@@ -50,8 +50,6 @@ function getSourceLocation(sourceLocator) {
 }
 
 function makeResolver(sourceLocator, filter) {
-  const pnp = require(`pnpapi`);
-
   const sourceLocation = getSourceLocation(sourceLocator);
 
   return resolver => {
@@ -75,6 +73,8 @@ function makeResolver(sourceLocator, filter) {
 
     // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
     resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
+      const pnp = require(`pnpapi`);
+
       let request = requestContext.request;
       let issuer = requestContext.context.issuer;
 
