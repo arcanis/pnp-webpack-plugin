@@ -15,15 +15,12 @@ function getModuleLocator(module) {
   if (!moduleLocation)
     throw new Error(`The specified module doesn't seem to exist on the filesystem`);
 
-  const moduleLocator = pnp.findPackageLocator(moduleLocation);
-
-  if (!moduleLocator)
-    throw new Error(`the specified module doesn't seem to be part of the dependency tree`);
-
-  return moduleLocator;
+  return pnp.findPackageLocator(moduleLocation);
 }
 
 function getDependencyLocator(sourceLocator, name) {
+  if (sourceLocator === null) return nothing;
+
   const pnp = require(`pnpapi`);
 
   const {packageDependencies} = pnp.getPackageInformation(sourceLocator);
@@ -50,6 +47,8 @@ function getSourceLocation(sourceLocator) {
 }
 
 function makeResolver(sourceLocator, filter) {
+  if (sourceLocator === null) return nothing;
+
   const sourceLocation = getSourceLocation(sourceLocator);
 
   return resolver => {
