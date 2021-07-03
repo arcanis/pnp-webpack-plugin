@@ -5,16 +5,39 @@ function nothing() {
   // ¯\_(ツ)_/¯
 }
 
-function getModuleLocator(module) {
-  const pnp = require(`pnpapi`);
+/**
+ * get pnp api
+ * @param {*} source source path that may own by a pnp runtime
+ * @returns 
+ */
+function getPnpApi(source) {
+  let api;
+  try {
+    // try findPnpApi first
+    const m = require("module");
+    if (source && m.findPnpApi) {
+      api = m.findPnpApi(source);
+    }
+    // fallback to pnpapi
+    if (!api)
+      api = require(`pnpapi`);
+  } catch (ex) {
+    return null;
+  }
+  return api;
+}
 
+function getModuleLocator(module) {
   const moduleLocation = typeof module === `string`
     ? module
     : module.filename;
 
   if (!moduleLocation)
     throw new Error(`The specified module doesn't seem to exist on the filesystem`);
-
+  
+  const pnp = getPnpApi(moduleLocation);
+  if (!pnp)
+    return null;
   const moduleLocator = pnp.findPackageLocator(moduleLocation);
 
   if (!moduleLocator)
@@ -24,8 +47,9 @@ function getModuleLocator(module) {
 }
 
 function getDependencyLocator(sourceLocator, name) {
-  const pnp = require(`pnpapi`);
-
+  const pnp = getPnpApi();
+  if (!pnp) 
+    return null;
   const {packageDependencies} = pnp.getPackageInformation(sourceLocator);
   const reference = packageDependencies.get(name);
 
@@ -36,7 +60,9 @@ function getSourceLocation(sourceLocator) {
   if (!sourceLocator)
     return null;
 
-  const pnp = require(`pnpapi`);
+  const pnp = getPnpApi();
+  if (!pnp) 
+    return null;
 
   const sourceInformation = pnp.getPackageInformation(sourceLocator);
 
@@ -73,8 +99,6 @@ function makeResolver(sourceLocator, filter) {
 
     // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
     resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
-      const pnp = require(`pnpapi`);
-
       let request = requestContext.request;
       let issuer = requestContext.context.issuer;
 
@@ -95,8 +119,8 @@ function makeResolver(sourceLocator, filter) {
 
       let resolutionIssuer = sourceLocation || issuer;
       let resolution;
-
       try {
+        const pnp = getPnpApi(resolutionIssuer);
         resolution = pnp.resolveToUnqualified(request, resolutionIssuer, {considerBuiltins: false});
       } catch (error) {
         if (resolveContext.missingDependencies)
