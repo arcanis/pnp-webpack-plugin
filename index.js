@@ -1,44 +1,20 @@
 const path = require(`path`);
 const {resolveModuleName} = require(`ts-pnp`);
+const {makeResolver} = require('./resolver');
 
 function nothing() {
   // ¯\_(ツ)_/¯
 }
 
-/**
- * get pnp api
- * @param {*} source source path that may own by a pnp runtime
- * @returns 
- */
-function getPnpApi(source) {
-  let api;
-  try {
-    // try findPnpApi first
-    const m = require("module");
-    if (source && m.findPnpApi) {
-      api = m.findPnpApi(source);
-    }
-    // fallback to pnpapi
-    if (!api)
-      api = require(`pnpapi`);
-  } catch (ex) {
-    return null;
-  }
-  return api;
-}
-
-function getModuleLocator(module) {
+function getModuleLocator(module, pnpapi) {
   const moduleLocation = typeof module === `string`
     ? module
     : module.filename;
 
   if (!moduleLocation)
     throw new Error(`The specified module doesn't seem to exist on the filesystem`);
-  
-  const pnp = getPnpApi(moduleLocation);
-  if (!pnp)
-    return null;
-  const moduleLocator = pnp.findPackageLocator(moduleLocation);
+
+  const moduleLocator = pnpapi.findPackageLocator(moduleLocation);
 
   if (!moduleLocator)
     throw new Error(`the specified module doesn't seem to be part of the dependency tree`);
@@ -46,136 +22,63 @@ function getModuleLocator(module) {
   return moduleLocator;
 }
 
-function getDependencyLocator(sourceLocator, name) {
-  const pnp = getPnpApi();
-  if (!pnp) 
-    return null;
-  const {packageDependencies} = pnp.getPackageInformation(sourceLocator);
+function getDependencyLocator(sourceLocator, name, pnpapi) {
+
+  const {packageDependencies} = pnpapi.getPackageInformation(sourceLocator);
   const reference = packageDependencies.get(name);
 
   return {name, reference};
 }
 
-function getSourceLocation(sourceLocator) {
-  if (!sourceLocator)
-    return null;
-
-  const pnp = getPnpApi();
-  if (!pnp) 
-    return null;
-
-  const sourceInformation = pnp.getPackageInformation(sourceLocator);
-
-  if (!sourceInformation)
-    throw new Error(`Couldn't find the package to use as resolution source`);
-
-  if (!sourceInformation.packageLocation)
-    throw new Error(`The package to use as resolution source seem to not have been installed - maybe it's a devDependency not installed in prod?`);
-
-  return sourceInformation.packageLocation.replace(/\/?$/, `/`);
-}
-
-function makeResolver(sourceLocator, filter) {
-  const sourceLocation = getSourceLocation(sourceLocator);
-
-  return resolver => {
-    const BACKWARD_PATH = /^\.\.([\\\/]|$)/;
-
-    const resolvedHook = resolver.ensureHook(`resolve`);
-
-    // Prevents the SymlinkPlugin from kicking in. We need the symlinks to be preserved because that's how we deal with peer dependencies ambiguities.
-    resolver.getHook(`file`).intercept({
-      register: tapInfo => {
-        return tapInfo.name !== `SymlinkPlugin` ? tapInfo : Object.assign({}, tapInfo, {fn: (request, resolveContext, callback) => {
-          callback();
-        }});
-      }
-    });
-
-    resolver.getHook(`after-module`).tapAsync(`PnpResolver`, (request, resolveContext, callback) => {
-      // rethrow pnp errors if we have any for this request
-      return callback(resolveContext.pnpErrors && resolveContext.pnpErrors.get(request.context.issuer));
-    });
-
-    // Register a plugin that will resolve bare imports into the package location on the filesystem before leaving the rest of the resolution to Webpack
-    resolver.getHook(`before-module`).tapAsync(`PnpResolver`, (requestContext, resolveContext, callback) => {
-      let request = requestContext.request;
-      let issuer = requestContext.context.issuer;
-
-      // When using require.context, issuer seems to be false (cf https://github.com/webpack/webpack-dev-server/blob/d0725c98fb752d8c0b1e8c9067e526e22b5f5134/client-src/default/index.js#L94)
-      if (!issuer) {
-        issuer = `${requestContext.path}/`;
-      // We only support issuer when they're absolute paths. I'm not sure the opposite can ever happen, but better check here.
-      } else if (!path.isAbsolute(issuer)) {
-        throw new Error(`Cannot successfully resolve this dependency - issuer not supported (${issuer})`);
-      }
-
-      if (filter) {
-        const relative = path.relative(filter, issuer);
-        if (path.isAbsolute(relative) || BACKWARD_PATH.test(relative)) {
-          return callback(null);
-        }
-      }
-
-      let resolutionIssuer = sourceLocation || issuer;
-      let resolution;
-      try {
-        const pnp = getPnpApi(resolutionIssuer);
-        resolution = pnp.resolveToUnqualified(request, resolutionIssuer, {considerBuiltins: false});
-      } catch (error) {
-        if (resolveContext.missingDependencies)
-          resolveContext.missingDependencies.add(requestContext.path);
-
-        if (resolveContext.log)
-          resolveContext.log(error.message);
-
-        resolveContext.pnpErrors = resolveContext.pnpErrors || new Map();
-        resolveContext.pnpErrors.set(issuer, error);
-
-        return callback();
-      }
-
-      resolver.doResolve(
-        resolvedHook,
-        Object.assign({}, requestContext, {
-          request: resolution,
-        }),
-        null,
-        resolveContext,
-        callback
-      );
-    });
-  };
-}
-
 module.exports = process.versions.pnp ? {
-  apply: makeResolver(null),
+  apply: makeResolver({pnpapi: require(`pnpapi`)}),
 } : {
   apply: nothing,
 };
 
 module.exports.makePlugin = (locator, filter) => process.versions.pnp ? {
-  apply: makeResolver(locator, filter),
+  apply: makeResolver({sourceLocator: locator, filter, pnpapi: require(`pnpapi`)}),
 } : {
   apply: nothing,
 };
 
-module.exports.moduleLoader = module => process.versions.pnp ? {
-  apply: makeResolver(getModuleLocator(module)),
-} : {
-  apply: nothing,
+module.exports.moduleLoader = (module) => {
+  if (process.versions.pnp) {
+    const pnpapi = require(`pnpapi`);
+    return {
+      apply: makeResolver({
+        sourceLocator: getModuleLocator(module, pnpapi),
+        pnpapi,
+      }),
+    };
+  }
+  return {
+    apply: nothing,
+  };
 };
 
 module.exports.topLevelLoader = process.versions.pnp ? {
-  apply: makeResolver({name: null, reference: null}),
+  apply: makeResolver({sourceLocator: {name: null, reference: null}, pnpapi: require(`pnpapi`)}),
 } : {
   apply: nothing,
 };
 
-module.exports.bind = (filter, module, dependency) => process.versions.pnp ? {
-  apply: makeResolver(dependency ? getDependencyLocator(getModuleLocator(module), dependency) : getModuleLocator(module), filter),
-} : {
-  apply: nothing,
+module.exports.bind = (filter, module, dependency) => {
+  if (process.versions.pnp) {
+    const pnpapi = require(`pnpapi`);
+    return {
+      apply: makeResolver({
+        sourceLocator: dependency
+          ? getDependencyLocator(getModuleLocator(module, pnpapi), dependency, pnpapi)
+          : getModuleLocator(module, pnpapi),
+        filter,
+        pnpapi,
+      }),
+    };
+  }
+  return {
+    apply: nothing,
+  };
 };
 
 module.exports.tsLoaderOptions = (options = {}) => process.versions.pnp ? Object.assign({}, options, {
