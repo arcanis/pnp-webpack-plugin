@@ -16,7 +16,7 @@ yarn add -D pnp-webpack-plugin
 Simply add the plugin to both the `resolver` and `resolveLoader`:
 
 ```js
-const PnpWebpackPlugin = require(`pnp-webpack-plugin`);
+const PnpWebpackPlugin = require('pnp-webpack-plugin');
 
 module.exports = {
   resolve: {
